@@ -1,0 +1,46 @@
+﻿@page "/counter"
+@using StateManagementObserverPattern.StateStores.CounterStore;
+@inject CounterStore counterStore 
+@implements IDisposable
+
+<PageTitle>Counter</PageTitle>
+
+<h1>Counter</h1>
+
+<p role="status">Current count: @counterStore.GetState().Count</p>
+
+<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+
+@code {
+    private int currentCount = 0;
+
+    protected override void OnInitialized() {
+        counterStore.AddStateChangeListeners(UpdateView);
+        //Add a listen in this Counter
+        //register this Counter component to listen to the counterStore
+
+        //counterStore is dependency as a scoped lifespan. which is scope to the connection.
+        //if page is not refreshed, the counterStore will live as long as the connection.
+        //if page is refreshed, the counterStore will be recreated.
+        //Because this Counter instance is registerd to the counterStore, essentially amke this 
+        //Counter component has the same lifespan as the store, which is a scoped life span.
+        //when user navigate away, blazor framework suppose to dispose it. 
+        // if framework doesn't dispose it, the counterStore holds a reference to the Counter component.
+        //wehn user navigate back to the counter component, it will recreate another instance of this.
+        //it will create multiple instances with the same component(Counter), if never release that,
+        //it will occur memory leak. we need to implements IDisposable interface.
+    }
+    private void UpdateView() {
+        StateHasChanged();
+    }
+    private void IncrementCount()
+    {
+        counterStore.IncrementCount();
+    }
+
+    public void Dispose() {
+        counterStore.RemoveStateChangeListeners(UpdateView);
+        //Deregister to the listener, detach the content from the counterStore.
+        //which allows garbage collector to collect the Counter component instance.
+    }
+}
